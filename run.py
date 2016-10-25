@@ -61,6 +61,8 @@ for i in range(0, TGLP_Config.number_of_pull_cycles): ## iterate through all twe
     # print(">>> Searching for a max id of {}").format(LT_ID[-1])
     # print(">>> Successfully gathered {} tweets").format(len(user_timeline))
 
+    #time.sleep(300) #sleep inbetween requests for larger data sets
+
     for tweet in user_timeline:
         #add the tweets checked to the array
         LT_ID.append(tweet["id"])
