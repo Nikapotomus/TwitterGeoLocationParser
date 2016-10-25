@@ -4,10 +4,17 @@ import time
 import sys
 import csv
 import simplekml
-
 import subprocess
 
-twitter_username = "Nikapotomus"
+import version
+from config import TGLP_Config
+
+print version.__banner__
+print "-"*40
+
+twitter_username = TGLP_Config.target_twitter_username
+
+print(">>> Requesting {} tweets").format(twitter_username)
 
 def output_path_gen():
     # print ">>> Generating CSV file"
@@ -19,16 +26,13 @@ def output_path_gen():
 
     # bashCmd = 'touch kml_files/{}'.format(newFileName)
     # subprocess.call(bashCmd, shell=True)
-
     return newFileName
 
+CONSUMER_KEY = TGLP_Config.CONSUMER_KEY
+CONSUMER_SECRET = TGLP_Config.CONSUMER_SECRET
 
-''' Go to https://apps.twitter.com/ to register for api keys '''
-CONSUMER_KEY = ''
-CONSUMER_SECRET = ''
-
-ACCESS_KEY = ''
-ACCESS_SECRET = ''
+ACCESS_KEY = TGLP_Config.ACCESS_KEY
+ACCESS_SECRET = TGLP_Config.ACCESS_SECRET
 
 twitter = Twython(CONSUMER_KEY,CONSUMER_SECRET,ACCESS_KEY,ACCESS_SECRET)
 
@@ -41,31 +45,36 @@ if latest_tweet_id is None:
     print(">>> ERROR: Could not find latest tweet!")
     sys.exit()
 
-LT_ID = latest_tweet_id[0]["id"] ## cache tweet id to not do pointless requests
+LT_ID = [latest_tweet_id[0]["id"]] ## cache tweet id to not do pointless requests
 geo_location_tweets = []
 
 #create kml object to store results
 kml=simplekml.Kml()
 
-# for i in range(0, 1): ## iterate through all tweets
+for i in range(0, TGLP_Config.number_of_pull_cycles): ## iterate through all tweets
 # tweet extract method with the last list item as the max_id
-user_timeline = twitter.get_user_timeline(screen_name= twitter_username,
-    count=200,
-    include_retweets=False,
-    max_id=LT_ID)
+    user_timeline = twitter.get_user_timeline(screen_name= twitter_username,
+        count=200,
+        include_retweets=False,
+        max_id=LT_ID[-1])
 
-# time.sleep(300) ## 5 minute rest between api calls
-# print(">>>> DEBUG: {} ").format(user_timeline)
+    # print(">>> Searching for a max id of {}").format(LT_ID[-1])
+    # print(">>> Successfully gathered {} tweets").format(len(user_timeline))
 
-for tweet in user_timeline:
-    #checks if there is a geo location returned
-    if tweet['coordinates'] is None:
-        continue
+    for tweet in user_timeline:
+        #add the tweets checked to the array
+        LT_ID.append(tweet["id"])
 
-    print(">>> Tweet id {} has geo data!").format(tweet["id"])
-    # print(tweet)
-    geo_location_tweets.append(tweet) # append tweet id's
+        #checks if there is a geo location returned
+        if tweet['coordinates'] is None:
+            continue
 
+        print(">>> Tweet id {} has geo data!").format(tweet["id"])
+        # print(tweet)
+        geo_location_tweets.append(tweet) # append tweet id's
+
+print(">>> Parsed a total of {} tweets").format(len(LT_ID))
+print(">>> Found {} geo location tweets").format(len(geo_location_tweets))
 print(">>> Pushing coordinates to kml file")
 
 for geo_tweet in geo_location_tweets:
